@@ -22,19 +22,20 @@ def getTwitterOAuthURL(conf, oauthTokenDict):
         token = Token.from_string(result)
         # Store the token by key so we can find it when the callback comes.
         oauthTokenDict[token.key] = token
-        request = Request.from_token_and_callback(
+        oauthRequest = Request.from_token_and_callback(
             token=token, http_url=conf.authorization_url)
-        url = request.to_url()
+        url = str(oauthRequest.to_url())
         log.msg('Browser OAuth redirect URL = %r' % url)
         return url
 
     consumer = Consumer(conf.consumer_key, conf.consumer_secret)
-    request = Request.from_consumer_and_token(
-        consumer, callback=conf.callback_url,
-        http_url=conf.request_token_url)
-    request.sign_request(SignatureMethod_HMAC_SHA1(), consumer, None)
-    r = RetryingCall(
-        client.getPage, conf.request_token_url, headers=request.to_header())
+    oauthRequest = Request.from_consumer_and_token(
+        consumer, http_url=conf.request_token_url)
+    oauthRequest.sign_request(SignatureMethod_HMAC_SHA1(), consumer, None)
+    headers = {}
+    for header, value in oauthRequest.to_header().iteritems():
+        headers[header] = str(value)
+    r = RetryingCall(client.getPage, conf.request_token_url, headers=headers)
     d = r.start()
     d.addCallback(_makeURL)
     d.addErrback(log.err)

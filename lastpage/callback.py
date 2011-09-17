@@ -76,13 +76,15 @@ class Callback(resource.Resource):
 
         conf = self._conf
         consumer = Consumer(conf.consumer_key, conf.consumer_secret)
-        oaRequest = Request.from_consumer_and_token(
-            consumer, token=token, verifier=oauthVerifier,
-            http_url=conf.access_token_url)
-        oaRequest.sign_request(
+        oauthRequest = Request.from_consumer_and_token(
+            consumer, token=token, http_url=conf.access_token_url)
+        oauthRequest.sign_request(
             SignatureMethod_HMAC_SHA1(), consumer, token)
         log.msg('Requesting access token.')
-        d = client.getPage(oaRequest.to_url(), headers=oaRequest.to_header())
+        headers = {}
+        for header, value in oauthRequest.to_header().iteritems():
+            headers[header] = str(value)
+        d = client.getPage(str(oauthRequest.to_url()), headers=headers)
         d.addCallback(self._storeAccessToken, request)
         d.addErrback(log.err)
         return server.NOT_DONE_YET
@@ -100,17 +102,16 @@ class Callback(resource.Resource):
         log.msg('Got access token: %s' % accessToken)
         conf = self._conf
         consumer = Consumer(conf.consumer_key, conf.consumer_secret)
-        oaRequest = Request.from_consumer_and_token(
-            consumer, token=accessToken,
-            http_url=conf.verify_credentials_url)
-        oaRequest.sign_request(
+        oauthRequest = Request.from_consumer_and_token(
+            consumer, token=accessToken, http_url=conf.verify_credentials_url)
+        oauthRequest.sign_request(
             SignatureMethod_HMAC_SHA1(), consumer, accessToken)
         log.msg('Verifying credentials.')
         if conf.oauth_echo_url:
             # Make an OAuth Echo request instead of calling
             # VerifyCredentials ourselves directly.
-            authHeader = oaRequest.to_header(
-                conf.verify_credentials_url)['Authorization']
+            authHeader = str(oauthRequest.to_header(
+                conf.verify_credentials_url)['Authorization'])
             headers = Headers({
                 'X-Auth-Service-Provider': [conf.verify_credentials_url],
                 'X-Verify-Credentials-Authorization': [authHeader],
@@ -118,7 +119,7 @@ class Callback(resource.Resource):
             url = conf.oauth_echo_url
         else:
             headers = Headers()
-            url = oaRequest.to_url()
+            url = str(oauthRequest.to_url())
         d = self._agent.request('GET', url, headers)
         d.addCallbacks(self._consumeResponse, self._verifyCredentialsError,
                        callbackArgs=[accessToken, request],
