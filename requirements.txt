@@ -4,4 +4,4 @@ Twisted
 simplejson
 MarkupSafe
 Jinja2
-oauth
+oauth2

@@ -1,5 +1,4 @@
-from oauth.oauth import (
-    OAuthToken, OAuthRequest, OAuthConsumer, OAuthSignatureMethod_HMAC_SHA1)
+from oauth2 import Token, Request, Consumer, SignatureMethod_HMAC_SHA1
 
 from twisted.python import log
 from twisted.web import client
@@ -20,20 +19,20 @@ def getTwitterOAuthURL(conf, oauthTokenDict):
     log.msg('Got login URL request.')
 
     def _makeURL(result):
-        token = OAuthToken.from_string(result)
+        token = Token.from_string(result)
         # Store the token by key so we can find it when the callback comes.
         oauthTokenDict[token.key] = token
-        request = OAuthRequest.from_token_and_callback(
+        request = Request.from_token_and_callback(
             token=token, http_url=conf.authorization_url)
         url = request.to_url()
         log.msg('Browser OAuth redirect URL = %r' % url)
         return url
 
-    consumer = OAuthConsumer(conf.consumer_key, conf.consumer_secret)
-    request = OAuthRequest.from_consumer_and_token(
+    consumer = Consumer(conf.consumer_key, conf.consumer_secret)
+    request = Request.from_consumer_and_token(
         consumer, callback=conf.callback_url,
         http_url=conf.request_token_url)
-    request.sign_request(OAuthSignatureMethod_HMAC_SHA1(), consumer, None)
+    request.sign_request(SignatureMethod_HMAC_SHA1(), consumer, None)
     r = RetryingCall(
         client.getPage, conf.request_token_url, headers=request.to_header())
     d = r.start()

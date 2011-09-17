@@ -17,8 +17,7 @@ import uuid
 
 from lastpage.agent import ResponseConsumer
 
-from oauth.oauth import (
-    OAuthToken, OAuthRequest, OAuthConsumer, OAuthSignatureMethod_HMAC_SHA1)
+from oauth2 import Token, Request, Consumer, SignatureMethod_HMAC_SHA1
 
 from twisted.internet import reactor
 from twisted.python import log
@@ -76,12 +75,12 @@ class Callback(resource.Resource):
             raise Exception('Received callback with unknown oauth_token.')
 
         conf = self._conf
-        consumer = OAuthConsumer(conf.consumer_key, conf.consumer_secret)
-        oaRequest = OAuthRequest.from_consumer_and_token(
+        consumer = Consumer(conf.consumer_key, conf.consumer_secret)
+        oaRequest = Request.from_consumer_and_token(
             consumer, token=token, verifier=oauthVerifier,
             http_url=conf.access_token_url)
         oaRequest.sign_request(
-            OAuthSignatureMethod_HMAC_SHA1(), consumer, token)
+            SignatureMethod_HMAC_SHA1(), consumer, token)
         log.msg('Requesting access token.')
         d = client.getPage(oaRequest.to_url(), headers=oaRequest.to_header())
         d.addCallback(self._storeAccessToken, request)
@@ -97,15 +96,15 @@ class Callback(resource.Resource):
             verify credentials (or an OAuth Echo endpoint which will proxy
             the verify credentials request.
         """
-        accessToken = OAuthToken.from_string(result)
+        accessToken = Token.from_string(result)
         log.msg('Got access token: %s' % accessToken)
         conf = self._conf
-        consumer = OAuthConsumer(conf.consumer_key, conf.consumer_secret)
-        oaRequest = OAuthRequest.from_consumer_and_token(
+        consumer = Consumer(conf.consumer_key, conf.consumer_secret)
+        oaRequest = Request.from_consumer_and_token(
             consumer, token=accessToken,
             http_url=conf.verify_credentials_url)
         oaRequest.sign_request(
-            OAuthSignatureMethod_HMAC_SHA1(), consumer, accessToken)
+            SignatureMethod_HMAC_SHA1(), consumer, accessToken)
         log.msg('Verifying credentials.')
         if conf.oauth_echo_url:
             # Make an OAuth Echo request instead of calling
