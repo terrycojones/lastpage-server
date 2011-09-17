@@ -74,6 +74,14 @@ class Callback(resource.Resource):
                     oauthToken)
             raise Exception('Received callback with unknown oauth_token.')
 
+        # Note that with the move to the Python oauth2 library, we no
+        # longer use use oauthVerifier.
+        #
+        # I think with oauth2 we might be expected to do:
+        # token.set_verifier = oauth_verifier but Twitter don't insist on
+        # it.  That's a change in OAuth 1.0 as described at
+        # http://wiki.oauth.net/w/page/12238555/Signed%20Callback%20URLs
+
         conf = self._conf
         consumer = Consumer(conf.consumer_key, conf.consumer_secret)
         oauthRequest = Request.from_consumer_and_token(
