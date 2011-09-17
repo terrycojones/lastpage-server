@@ -328,7 +328,7 @@ class LastPageOf(resource.Resource):
     def _oops(self, fail, request):
         """
         Produce an internal server error page to indicate that we had a
-        severed problem.
+        severe problem.
 
         @param fail: the Twisted failure.
         @param request: A twisted.web HTTP C{Request}.

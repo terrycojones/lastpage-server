@@ -89,7 +89,18 @@ class Callback(resource.Resource):
         oaRequest.sign_request(
             OAuthSignatureMethod_HMAC_SHA1(), consumer, accessToken)
         log.msg('Verifying credentials.')
-        d = client.getPage(oaRequest.to_url())
+        if conf.oauth_echo_url:
+            # Make an OAuth Echo request instead of calling
+            # VerifyCredentials ourselves directly.
+            authHeader = oaRequest.to_header(
+                conf.verify_credentials_url)['Authorization']
+            headers = {
+                'X-Auth-Service-Provider': conf.verify_credentials_url,
+                'X-Verify-Credentials-Authorization': authHeader,
+                }
+            d = client.getPage(conf.oauth_echo_url, headers=headers)
+        else:
+            d = client.getPage(oaRequest.to_url())
         d.addCallback(self._storeUser, accessToken, request)
         d.addErrback(log.err)
         return d
